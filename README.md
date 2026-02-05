@@ -14,6 +14,7 @@ Pencil only provides a Linux build. This project solves that by running it insid
 2. **FUSE mount issue** - AppImage FUSE is unstable in WSL; extract squashfs to run directly
 3. **MCP arg format** - MCP Server uses single-dash args `-app` instead of `--app`
 4. **WSL stderr interference** - WSL proxy warnings interfere with MCP stdio; suppress via `.cmd` wrapper
+5. **File save location** - Ctrl+S saves to the Linux filesystem by default, which is not easily accessible from Windows
 
 ## Quick Install
 
@@ -126,6 +127,18 @@ Warp MCP config:
 **Cause**: MCP Server uses single-dash args.
 
 **Solution**: Use `-app desktop` instead of `--app desktop`.
+
+### Issue 4: Saved files not found / no save prompt
+
+**Cause**: Pencil runs inside WSL, so Ctrl+S saves files to the Linux filesystem (e.g. `/home/username/...`), which is not directly visible from Windows Explorer.
+
+**Solution**: Use **File → Save As** and save to a Windows path via the WSL mount:
+```
+/mnt/d/your/project/path/design.pen
+```
+This maps to `D:\your\project\path\design.pen` on Windows, accessible by both Pencil and Windows applications.
+
+> 💡 **Tip**: WSL mounts Windows drives under `/mnt/` — so `C:\` = `/mnt/c/`, `D:\` = `/mnt/d/`, etc.
 
 ### Test MCP Connection
 

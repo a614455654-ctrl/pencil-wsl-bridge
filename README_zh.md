@@ -14,6 +14,7 @@ Pencil 官方仅提供 Linux 版本。本项目通过 WSL 运行 Pencil，并将
 2. **FUSE 挂载问题** - AppImage 的 FUSE 在 WSL 中不稳定，通过提取 squashfs 直接运行
 3. **MCP 参数格式** - MCP Server 使用单横线参数 `-app` 而非 `--app`
 4. **WSL stderr 干扰** - WSL 代理警告会干扰 MCP stdio 通信，需通过 `.cmd` 包装抑制
+5. **文件保存位置** - Ctrl+S 默认保存到 Linux 文件系统，Windows 下不易访问
 
 ## 一键安装
 
@@ -126,6 +127,18 @@ Warp MCP 配置：
 **原因**：MCP Server 使用单横线参数。
 
 **解决**：使用 `-app desktop` 而非 `--app desktop`。
+
+### 问题 4：保存文件找不到 / 没有保存提示
+
+**原因**：Pencil 运行在 WSL 内部，Ctrl+S 会将文件保存到 Linux 文件系统（如 `/home/用户名/...`），在 Windows 资源管理器中不容易找到。
+
+**解决**：使用 **File → Save As**，保存到 WSL 挂载的 Windows 路径：
+```
+/mnt/d/你的/项目/路径/设计文件.pen
+```
+这对应 Windows 上的 `D:\你的\项目\路径\设计文件.pen`，Pencil 和 Windows 应用都能访问。
+
+> 💡 **提示**：WSL 将 Windows 磁盘挂载在 `/mnt/` 下——`C:\` = `/mnt/c/`，`D:\` = `/mnt/d/`，以此类推。
 
 ### 测试 MCP 连接
 

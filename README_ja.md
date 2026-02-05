@@ -14,6 +14,7 @@ Pencil は Linux 版のみ提供されています。このプロジェクトは
 2. **FUSE マウント問題** - AppImage の FUSE は WSL で不安定なため、squashfs を展開して直接実行
 3. **MCP 引数形式** - MCP Server は `--app` ではなく `-app` を使用
 4. **WSL stderr 干渉** - WSL プロキシ警告が MCP stdio 通信を妨害、`.cmd` ラッパーで抑制
+5. **ファイル保存場所** - Ctrl+S はデフォルトで Linux ファイルシステムに保存され、Windows からアクセスしにくい
 
 ## ワンクリックインストール
 
@@ -126,6 +127,18 @@ Warp MCP 設定：
 **原因**：MCP Server はシングルダッシュ引数を使用。
 
 **解決**：`--app desktop` ではなく `-app desktop` を使用。
+
+### 問題 4：保存したファイルが見つからない / 保存プロンプトが出ない
+
+**原因**：Pencil は WSL 内で実行されているため、Ctrl+S は Linux ファイルシステム（例：`/home/ユーザー名/...`）にファイルを保存します。Windows エクスプローラーからは直接見えません。
+
+**解決**：**File → Save As** を使用し、WSL マウント経由で Windows パスに保存：
+```
+/mnt/d/your/project/path/design.pen
+```
+これは Windows 上の `D:\your\project\path\design.pen` に対応し、Pencil と Windows アプリの両方からアクセスできます。
+
+> 💡 **ヒント**：WSL は Windows ドライブを `/mnt/` 以下にマウントします — `C:\` = `/mnt/c/`、`D:\` = `/mnt/d/` など。
 
 ### MCP 接続テスト
 
