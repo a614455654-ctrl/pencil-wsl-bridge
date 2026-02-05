@@ -15,7 +15,21 @@ Pencil は Linux 版のみ提供されています。このプロジェクトは
 3. **MCP 引数形式** - MCP Server は `--app` ではなく `-app` を使用
 4. **WSL stderr 干渉** - WSL プロキシ警告が MCP stdio 通信を妨害、`.cmd` ラッパーで抑制
 
-## インストール
+## ワンクリックインストール
+
+PowerShell で実行：
+```powershell
+irm https://raw.githubusercontent.com/a614455654-ctrl/pencil-wsl-bridge/main/install.ps1 | iex
+```
+
+インストーラーが自動的に：
+- WSL ディストロとユーザーを検出
+- Pencil をダウンロード・展開
+- プロキシ設定を構成
+- デスクトップショートカットと MCP ラッパーを作成
+- AI ツール用の MCP 設定を出力
+
+## 手動インストール
 
 ### 前提条件
 

@@ -15,7 +15,21 @@ Pencil only provides a Linux build. This project solves that by running it insid
 3. **MCP arg format** - MCP Server uses single-dash args `-app` instead of `--app`
 4. **WSL stderr interference** - WSL proxy warnings interfere with MCP stdio; suppress via `.cmd` wrapper
 
-## Installation
+## Quick Install
+
+Run this in PowerShell:
+```powershell
+irm https://raw.githubusercontent.com/a614455654-ctrl/pencil-wsl-bridge/main/install.ps1 | iex
+```
+
+The installer will automatically:
+- Detect your WSL distro and user
+- Download and extract Pencil
+- Configure proxy settings
+- Create desktop shortcut and MCP wrapper
+- Print MCP configuration for your AI tool
+
+## Manual Installation
 
 ### Prerequisites
 

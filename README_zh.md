@@ -15,7 +15,21 @@ Pencil 官方仅提供 Linux 版本。本项目通过 WSL 运行 Pencil，并将
 3. **MCP 参数格式** - MCP Server 使用单横线参数 `-app` 而非 `--app`
 4. **WSL stderr 干扰** - WSL 代理警告会干扰 MCP stdio 通信，需通过 `.cmd` 包装抑制
 
-## 安装
+## 一键安装
+
+在 PowerShell 中运行：
+```powershell
+irm https://raw.githubusercontent.com/a614455654-ctrl/pencil-wsl-bridge/main/install.ps1 | iex
+```
+
+安装程序会自动：
+- 检测 WSL 发行版和用户
+- 下载并提取 Pencil
+- 配置代理设置
+- 创建桌面快捷方式和 MCP 包装器
+- 输出 AI 工具的 MCP 配置信息
+
+## 手动安装
 
 ### 前置要求
 
