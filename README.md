@@ -1,71 +1,73 @@
 # Pencil WSL Bridge
 
-在 Windows 上通过 WSL 运行 Pencil，并桥接 MCP 协议到 Warp 终端。
+**[English](README.md)** | **[中文](README_zh.md)** | **[日本語](README_ja.md)**
 
-## 背景
+Run [Pencil](https://pencil.evolany.com/) on Windows via WSL and bridge its MCP protocol to Warp terminal.
 
-[Pencil](https://pencil.evolany.com/) 是一款优秀的设计工具，但官方仅提供 Linux 版本。本项目通过 WSL 实现在 Windows 环境下运行 Pencil，并提供 MCP Server 桥接方案。
+## Why?
 
-## 解决的问题
+Pencil only provides a Linux build. This project solves that by running it inside WSL and bridging the MCP Server to Windows.
 
-1. **代理问题** - WSL 无法访问 `localhost` 代理，改用 Windows 主机 IP
-2. **FUSE 挂载问题** - AppImage 依赖的 FUSE 在 WSL 中不稳定，通过提取 squashfs 解决
-3. **MCP 参数格式** - MCP Server 使用单横线参数 `-app` 而非 `--app`
-4. **WSL stderr 干扰** - WSL 代理警告会干扰 MCP stdio 通信，需通过 `.cmd` 包装抑制
+## Problems Solved
 
-## 安装
+1. **Proxy issue** - WSL cannot access `localhost` proxy; uses Windows host IP instead
+2. **FUSE mount issue** - AppImage FUSE is unstable in WSL; extract squashfs to run directly
+3. **MCP arg format** - MCP Server uses single-dash args `-app` instead of `--app`
+4. **WSL stderr interference** - WSL proxy warnings interfere with MCP stdio; suppress via `.cmd` wrapper
 
-### 1. 前置要求
+## Installation
+
+### Prerequisites
 
 - Windows 10/11 + WSL2
 - Ubuntu (WSL)
-- 代理软件（如 Clash）监听在 `7897` 端口
+- Proxy software (e.g. Clash) listening on port `7897`
 
-### 2. 在 WSL Ubuntu 中安装
+### 1. Install in WSL Ubuntu
 
 ```bash
-# 下载 Pencil AppImage
+# Download Pencil AppImage
 wget https://github.com/nicepkg/pencil/releases/latest/download/Pencil-linux-x86_64.AppImage
 
-# 提取 squashfs（避免 FUSE 问题）
+# Extract squashfs (avoids FUSE issues)
 chmod +x Pencil-linux-x86_64.AppImage
 ./Pencil-linux-x86_64.AppImage --appimage-extract
 mv squashfs-root ~/squashfs-root
 
-# 复制启动脚本
+# Copy scripts
 cp scripts/start-pencil.sh ~/
 cp scripts/pencil-mcp.sh ~/
 chmod +x ~/start-pencil.sh ~/pencil-mcp.sh
 ```
 
-### 3. 配置代理 IP
+### 2. Configure Proxy IP
 
-获取 Windows 主机 IP：
+Get your Windows host IP:
 ```powershell
 (Get-NetIPAddress -InterfaceAlias "vEthernet (WSL*)" -AddressFamily IPv4).IPAddress
 ```
 
-编辑脚本中的代理地址（替换 `172.25.176.1` 为你的 IP）。
+Edit the proxy address in both scripts (replace `172.25.176.1` with your IP).
 
-### 4. Windows 桌面快捷方式
+### 3. Desktop Shortcut
 
-将 `windows/启动Pencil.bat` 和 `windows/启动Pencil.ps1` 复制到桌面。
+Copy `windows/启动Pencil.bat` and `windows/启动Pencil.ps1` to your desktop.
 
-## MCP 配置（Warp）
+## MCP Configuration (Warp)
 
-### 方法一：使用 .cmd 包装（推荐）
+### Method 1: .cmd Wrapper (Recommended)
 
-创建 `C:\Users\<用户名>\pencil-mcp.cmd`：
+Create `C:\Users\<username>\pencil-mcp.cmd`:
 ```batch
 @echo off
-wsl -d Ubuntu -u <用户名> -e /home/<用户名>/pencil-mcp.sh 2>nul
+wsl -d Ubuntu -u <username> -e /home/<username>/pencil-mcp.sh 2>nul
 ```
 
-Warp MCP 配置：
+Warp MCP config:
 ```json
 {
   "Pencil": {
-    "command": "C:\\Users\\<用户名>\\pencil-mcp.cmd",
+    "command": "C:\\Users\\<username>\\pencil-mcp.cmd",
     "args": [],
     "env": {},
     "start_on_launch": true
@@ -73,56 +75,56 @@ Warp MCP 配置：
 }
 ```
 
-### 方法二：直接调用 WSL
+### Method 2: Direct WSL Call
 
 ```json
 {
   "Pencil": {
     "command": "wsl",
-    "args": ["-d", "Ubuntu", "-u", "<用户名>", "-e", "/home/<用户名>/pencil-mcp.sh"],
+    "args": ["-d", "Ubuntu", "-u", "<username>", "-e", "/home/<username>/pencil-mcp.sh"],
     "env": {},
     "start_on_launch": true
   }
 }
 ```
 
-> ⚠️ 如果 WSL 输出代理警告导致 `Transport closed` 错误，请使用方法一。
+> ⚠️ If WSL outputs proxy warnings causing `Transport closed` errors, use Method 1.
 
-## 故障排除
+## Troubleshooting
 
-### 问题 1：Transport closed
+### Issue 1: Transport closed
 
-**原因**：WSL 的 stderr 输出（如代理警告）干扰了 MCP 的 stdio 通信。
+**Cause**: WSL stderr output (e.g. proxy warnings) interferes with MCP stdio communication.
 
-**解决**：使用 `.cmd` 包装脚本，添加 `2>nul` 抑制 stderr。
+**Solution**: Use `.cmd` wrapper script with `2>nul` to suppress stderr.
 
-### 问题 2：WebSocket not connected to app: desktop
+### Issue 2: WebSocket not connected to app: desktop
 
-**原因**：MCP Server 无法连接到 Pencil GUI。
+**Cause**: MCP Server cannot connect to Pencil GUI.
 
-**解决**：
-1. 确保先启动 Pencil GUI（双击 `启动Pencil.bat`）
-2. 等待 Pencil 完全加载后再启用 MCP
-3. 检查端口文件是否存在：`~/.pencil/apps/desktop`
+**Solution**:
+1. Make sure Pencil GUI is launched first (double-click `启动Pencil.bat`)
+2. Wait for Pencil to fully load before enabling MCP
+3. Check if port file exists: `~/.pencil/apps/desktop`
 
-### 问题 3：MCP 参数格式错误
+### Issue 3: MCP arg format error
 
-**原因**：MCP Server 使用单横线参数。
+**Cause**: MCP Server uses single-dash args.
 
-**解决**：使用 `-app desktop` 而非 `--app desktop`。
+**Solution**: Use `-app desktop` instead of `--app desktop`.
 
-### 测试 MCP 连接
+### Test MCP Connection
 
 ```powershell
-# 测试 MCP Server 是否正常启动
-wsl -d Ubuntu -u <用户名> -e bash -c "echo 'test' | timeout 3 /home/<用户名>/pencil-mcp.sh 2>&1"
+# Test if MCP Server starts correctly
+wsl -d Ubuntu -u <username> -e bash -c "echo 'test' | timeout 3 /home/<username>/pencil-mcp.sh 2>&1"
 
-# 预期输出：
+# Expected output:
 # [MCP] Starting server in stdio mode
 # {"jsonrpc":"2.0","id":null,"error":{"code":-32700,"message":"Parse error"}}
 ```
 
-## 架构
+## Architecture
 
 ```
 Warp (Windows) → WSL → pencil-mcp.sh → Pencil MCP Server → Pencil GUI
