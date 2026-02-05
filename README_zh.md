@@ -124,11 +124,44 @@ wsl -d Ubuntu -u <用户名> -e bash -c "echo 'test' | timeout 3 /home/<用户�
 # {"jsonrpc":"2.0","id":null,"error":{"code":-32700,"message":"Parse error"}}
 ```
 
-## 架构
+## 工作原理
+
+Pencil **并不是**原生运行在 Windows 上。它作为 Linux 进程运行在 WSL2 内部，通过多层桥接实现：
+
+### GUI 显示（WSLg）
+
+WSL2 内置了 [WSLg](https://github.com/microsoft/wslg)（Windows Subsystem for Linux GUI），它通过 Wayland/X11 自动将 Linux GUI 应用转发到 Windows 桌面。因此 Pencil 的窗口会像原生 Windows 应用一样显示在你的桌面上，但实际上它是由 Linux 进程渲染的。
+
+### AppImage → squashfs 提取
+
+Pencil 以 AppImage 格式发布，正常情况下需要 FUSE 在运行时挂载虚拟文件系统。但 WSL2 中的 FUSE 不可靠——挂载点（`/tmp/.mount_Pencil*`）经常断开连接，报错 `"Transport endpoint is not connected"`。
+
+我们的解决方案：直接提取 AppImage 的 squashfs 内容（`--appimage-extract`），完全绕过 FUSE。提取出的 `squashfs-root/` 目录包含完整应用，可以直接运行。
+
+### MCP 协议桥接
+
+Pencil 的 MCP Server 是一个独立的二进制文件（`mcp-server-linux-x64`），它通过 WebSocket（localhost）与 Pencil GUI 通信，并对外暴露基于 stdio 的 MCP 接口。
+
+桥接链路：
 
 ```
-Warp (Windows) → WSL → pencil-mcp.sh → Pencil MCP Server → Pencil GUI
+Warp (Windows)
+  │
+  ├─ stdio ─→ wsl.exe ─→ pencil-mcp.sh ─→ mcp-server-linux-x64
+  │                                              │
+  │                                         WebSocket (localhost)
+  │                                              │
+  └─ WSLg ──── X11/Wayland ──────────────── Pencil GUI
 ```
+
+1. **Warp** 通过 stdio 向 `wsl.exe` 发送 MCP 请求
+2. **wsl.exe** 将 stdin/stdout 转发到 Linux 中的 `pencil-mcp.sh` 脚本
+3. **MCP Server** 处理请求，并通过本地 WebSocket 与 Pencil GUI 通信
+4. **Pencil GUI** 通过 WSLg 渲染，显示在 Windows 桌面上
+
+### 代理处理
+
+WSL2 运行在 NAT 网络中，无法访问 Windows 主机的 `localhost`。代理流量必须路由到 Windows 主机在 WSL 虚拟网络上的实际 IP（如 `172.25.176.1`）。两个脚本都配置了 `http_proxy` / `https_proxy` 指向该地址。
 
 ## 许可证
 

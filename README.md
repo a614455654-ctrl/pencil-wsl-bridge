@@ -124,11 +124,44 @@ wsl -d Ubuntu -u <username> -e bash -c "echo 'test' | timeout 3 /home/<username>
 # {"jsonrpc":"2.0","id":null,"error":{"code":-32700,"message":"Parse error"}}
 ```
 
-## Architecture
+## How it Works
+
+Pencil does **not** run natively on Windows. It runs as a Linux process inside WSL2, with multiple layers of bridging:
+
+### GUI Display (WSLg)
+
+WSL2 includes [WSLg](https://github.com/microsoft/wslg) (Windows Subsystem for Linux GUI), which automatically forwards Linux GUI applications to the Windows desktop via Wayland/X11. This means Pencil's window appears on your Windows desktop as if it were a native app, but it's actually rendered by a Linux process.
+
+### AppImage → squashfs Extraction
+
+Pencil is distributed as an AppImage, which normally requires FUSE to mount a virtual filesystem at runtime. However, FUSE in WSL2 is unreliable — the mount point (`/tmp/.mount_Pencil*`) frequently disconnects with `"Transport endpoint is not connected"` errors. 
+
+Our solution: extract the AppImage's squashfs contents directly (`--appimage-extract`), bypassing FUSE entirely. The extracted `squashfs-root/` directory contains the full application and can be run directly.
+
+### MCP Protocol Bridging
+
+Pencil's MCP Server is a standalone binary (`mcp-server-linux-x64`) that communicates with the Pencil GUI via WebSocket (localhost) and exposes a stdio-based MCP interface.
+
+The bridging chain:
 
 ```
-Warp (Windows) → WSL → pencil-mcp.sh → Pencil MCP Server → Pencil GUI
+Warp (Windows)
+  │
+  ├─ stdio ─→ wsl.exe ─→ pencil-mcp.sh ─→ mcp-server-linux-x64
+  │                                              │
+  │                                         WebSocket (localhost)
+  │                                              │
+  └─ WSLg ──── X11/Wayland ──────────────── Pencil GUI
 ```
+
+1. **Warp** sends MCP requests via stdio to `wsl.exe`
+2. **wsl.exe** forwards stdin/stdout to the Linux `pencil-mcp.sh` script
+3. **MCP Server** processes requests and communicates with Pencil GUI over local WebSocket
+4. **Pencil GUI** renders via WSLg, displayed on Windows desktop
+
+### Proxy Handling
+
+WSL2 runs in a NAT network and cannot access `localhost` on the Windows host. Proxy traffic must be routed to the Windows host's actual IP on the WSL virtual network (e.g. `172.25.176.1`). Both scripts configure `http_proxy` / `https_proxy` to point to this address.
 
 ## License
 
